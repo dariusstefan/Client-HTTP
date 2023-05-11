@@ -20,12 +20,6 @@ void error(const char *msg)
     exit(0);
 }
 
-void compute_message(char *message, const char *line)
-{
-    strcat(message, line);
-    strcat(message, "\r\n");
-}
-
 int open_connection(char *host_ip, int portno, int ip_type, int socket_type, int flag)
 {
     struct sockaddr_in serv_addr;
@@ -123,9 +117,4 @@ char *receive_from_server(int sockfd)
     }
     buffer_add(&buffer, "", 1);
     return buffer.data;
-}
-
-char *basic_extract_json_response(char *str)
-{
-    return strstr(str, "{\"");
 }

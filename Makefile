@@ -1,8 +1,7 @@
-CC=gcc
-CFLAGS=-I.
+CC=g++
 
-client: client.c requests.c helpers.c buffer.c
-	$(CC) -o client client.c requests.c helpers.c buffer.c -Wall
+client: client.cpp helpers.cpp buffer.cpp
+	$(CC) -o client client.cpp helpers.cpp buffer.cpp -Wall
 
 run: client
 	./client
