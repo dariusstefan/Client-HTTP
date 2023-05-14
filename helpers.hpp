@@ -1,3 +1,6 @@
+#ifndef _HELPERS_
+#define _HELPERS_
+
 #include <stdlib.h>     /* exit, atoi, malloc, free */
 #include <stdio.h>
 #include <unistd.h>     /* read, write, close */
@@ -8,15 +11,17 @@
 #include <arpa/inet.h>
 #include <string>
 #include <iostream>
-#include "helpers.h"
 #include "buffer.h"
 
-using namespace std;
+#define BUFLEN 4096
+#define LINELEN 1000
 
 #define HEADER_TERMINATOR "\r\n\r\n"
 #define HEADER_TERMINATOR_SIZE (sizeof(HEADER_TERMINATOR) - 1)
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_LENGTH_SIZE (sizeof(CONTENT_LENGTH) - 1)
+
+using namespace std;
 
 void error(const char *msg)
 {
@@ -166,3 +171,5 @@ bool check_credential(string to_check_str, string descriptor) {
 
     return true;
 }
+
+#endif

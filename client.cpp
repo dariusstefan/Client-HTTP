@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <string>
 #include <iostream>
-#include "helpers.h"
+#include "helpers.hpp"
 #include "requests.hpp"
 #include "nlohmann/json.hpp"
 #include "nlohmann/json_fwd.hpp"
@@ -144,23 +144,14 @@ state_t do_register(instance_data_t data) {
     cout << "username=";
     getline(cin, username);
 
-    if (username.size() == 0) {
-        cout << "Username must contain at least 1 character!" << endl;
+    if (!check_credential(username, "Username"))
         return STATE_INPUT;
-    }
-
-    if (username.find(' ') != string::npos) {
-        cout << "Username must not contain whitespace!" << endl;
-        return STATE_INPUT;
-    }
 
     cout << "password=";
     getline(cin, password);
 
-    if (password.find(' ') != string::npos) {
-        cout << "Password must not contain whitespaces!" << endl;
+    if (!check_credential(password, "Password"))
         return STATE_INPUT;
-    }
     
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
@@ -171,7 +162,7 @@ state_t do_register(instance_data_t data) {
 
     string body = body_json.dump(4);
 
-    string request = compute_post_request(ip_server, "/api/v1/tema/auth/register", "application/json", body, body.size(), "");
+    string request = compute_post_request(ip_server, "/api/v1/tema/auth/register", "application/json", body, body.size(), "", "");
 
     int request_len = request.size();
 
@@ -189,8 +180,8 @@ state_t do_register(instance_data_t data) {
     response_stream >> http;
     response_stream >> response_code;
 
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - User successfully registered!" << endl;
+    if (response_code.compare("201") == 0) {
+        cout << "201 - Created - User successfully registered!" << endl;
     }
 
     if (response_code.compare("400") == 0) {
@@ -217,23 +208,14 @@ state_t do_login(instance_data_t data) {
     cout << "username=";
     getline(cin, username);
 
-    if (username.size() == 0) {
-        cout << "Username must contain at least 1 character!" << endl;
+    if (!check_credential(username, "Username"))
         return STATE_INPUT;
-    }
-
-    if (username.find(' ') != string::npos) {
-        cout << "Username must not contain whitespace!" << endl;
-        return STATE_INPUT;
-    }
 
     cout << "password=";
     getline(cin, password);
 
-    if (password.find(' ') != string::npos) {
-        cout << "Password must not contain whitespaces!" << endl;
+    if (!check_credential(password, "Password"))
         return STATE_INPUT;
-    }
 
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
@@ -244,7 +226,7 @@ state_t do_login(instance_data_t data) {
 
     string body = body_json.dump(4);
 
-    string request = compute_post_request(ip_server, "/api/v1/tema/auth/login", "application/json", body, body.size(), "");
+    string request = compute_post_request(ip_server, "/api/v1/tema/auth/login", "application/json", body, body.size(), "", "");
 
     int request_len = request.size();
 
@@ -304,7 +286,7 @@ state_t do_login(instance_data_t data) {
 state_t do_enter_library(instance_data_t data) {
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
-    string request = compute_get_request(ip_server, "/api/v1/tema/library/access", "", "", data->cookie);
+    string request = compute_get_request(ip_server, "/api/v1/tema/library/access", "", data->cookie);
 
     int request_len = request.size();
 
@@ -355,7 +337,7 @@ state_t do_enter_library(instance_data_t data) {
 state_t do_get_books(instance_data_t data) {
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
-    string request = compute_get_request(ip_server, "/api/v1/tema/library/books", "", data->jwt_token, data->cookie);
+    string request = compute_get_request(ip_server, "/api/v1/tema/library/books", data->jwt_token, data->cookie);
 
     int request_len = request.size();
 
@@ -409,31 +391,12 @@ state_t do_get_book(instance_data_t data) {
     cout << "id=";
     getline(cin, id_string);
 
-    if (id_string.size() == 0) {
-        cout << "ID must contain at least one digit!" << endl;
+    if (!check_number(id_string, "ID"))
         return STATE_INPUT;
-    }
-
-    if (id_string[0] == '0') {
-        cout << "ID must be a number!" << endl;
-        return STATE_INPUT;
-    }
-
-    if (id_string[0] == '-') {
-        cout << "ID must be a positive number!" << endl;
-        return STATE_INPUT;
-    }
-
-    for (auto c : id_string) {
-        if (!isdigit(c)) {
-            cout << "ID must be a number!" << endl;
-            return STATE_INPUT;
-        }
-    }
 
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
-    string request = compute_get_request(ip_server, "/api/v1/tema/library/books/" + id_string, "", data->jwt_token, data->cookie);
+    string request = compute_get_request(ip_server, "/api/v1/tema/library/books/" + id_string, data->jwt_token, data->cookie);
 
     int request_len = request.size();
 
@@ -489,6 +452,70 @@ state_t do_get_book(instance_data_t data) {
 }
 
 state_t do_add_book(instance_data_t data) {
+    string title;
+    string author;
+    string genre;
+    string page_count;
+    string publisher;
+
+    cout << "title=";
+    getline(cin, title);
+
+    if (!check_string(title, "Title"))
+        return STATE_INPUT;
+
+    cout << "author=";
+    getline(cin, author);
+
+    if (!check_string(author, "Author"))
+        return STATE_INPUT;
+
+    cout << "genre=";
+    getline(cin, genre);
+
+    if (!check_string(genre, "Genre"))
+        return STATE_INPUT;
+
+    cout << "page_count=";
+    getline(cin, page_count);
+
+    if (!check_number(page_count, "Page count"))
+        return STATE_INPUT;
+
+    cout << "publisher=";
+    getline(cin, publisher);
+
+    if (!check_string(publisher, "Publisher"))
+        return STATE_INPUT;
+
+    data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
+
+    json body_json;
+
+    body_json["title"] = title;
+    body_json["author"] = author;
+    body_json["genre"] = genre;
+    body_json["page_count"] = page_count;
+    body_json["publisher"] = publisher;
+
+    string body = body_json.dump(4);
+
+    string request = compute_post_request(ip_server + to_string(port), "/api/v1/tema/library/books", "application/json", body, body.size(), data->jwt_token, data->cookie);
+
+    int request_len = request.size();
+
+    char *request_char_array = new char[request_len + 1];
+    strcpy(request_char_array, request.c_str());
+
+    send_to_server(data->server_sockfd, request_char_array);
+
+    string response = receive_from_server(data->server_sockfd);
+
+    cout << response << endl;
+
+    close_connection(data->server_sockfd);
+    delete request_char_array;
+
     return STATE_INPUT;
 }
 
@@ -498,31 +525,34 @@ state_t do_delete_book(instance_data_t data) {
     cout << "id=";
     getline(cin, id_string);
 
-    if (id_string[0] == '0') {
-        cout << "ID must be a number!" << endl;
+    if (!check_number(id_string, "ID"))
         return STATE_INPUT;
-    }
 
-    if (id_string[0] == '-') {
-        cout << "ID must be a positive number!" << endl;
-        return STATE_INPUT;
-    }
+    data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
 
-    for (auto c : id_string) {
-        if (!isdigit(c)) {
-            cout << "ID must be a number!" << endl;
-            return STATE_INPUT;
-        }
-    }
+    string request = compute_delete_request(ip_server, "/api/v1/tema/library/books/" + id_string, data->jwt_token, data->cookie);
 
-    cout << "delete_book: " << id_string << endl;
+    int request_len = request.size();
+
+    char *request_char_array = new char[request_len + 1];
+    strcpy(request_char_array, request.c_str());
+
+    send_to_server(data->server_sockfd, request_char_array);
+
+    string response = receive_from_server(data->server_sockfd);
+
+    cout << response << endl;
+
+    close_connection(data->server_sockfd);
+    delete request_char_array;
+
     return STATE_INPUT;
 }
 
 state_t do_logout(instance_data_t data) {
     data->server_sockfd = open_connection(ip_server, port, AF_INET, SOCK_STREAM, 0);
     
-    string request = compute_get_request(ip_server, "/api/v1/tema/auth/logout", "", "", data->cookie);
+    string request = compute_get_request(ip_server, "/api/v1/tema/auth/logout", "", data->cookie);
 
     int request_len = request.size();
 

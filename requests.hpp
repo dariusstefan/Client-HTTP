@@ -1,3 +1,6 @@
+#ifndef _REQUESTS_
+#define _REQEUSTS_
+
 #include <stdlib.h>     /* exit, atoi, malloc, free */
 #include <stdio.h>
 #include <unistd.h>     /* read, write, close */
@@ -7,18 +10,14 @@
 #include <netdb.h>      /* struct hostent, gethostbyname */
 #include <arpa/inet.h>
 #include <string>
-#include "helpers.h"
+#include "helpers.hpp"
 
 using namespace std;
 
-string compute_get_request(string host, string url, string query_params, string jwt_token, string cookie) {
+string compute_get_request(string host, string url, string jwt_token, string cookie) {
     string message = "";
 
-    if (query_params.compare("") != 0) {
-        message += "GET " + url + "?" + query_params + " HTTP/1.1\r\n";
-    } else {
-        message += "GET " + url + " HTTP/1.1\r\n";
-    }
+    message += "GET " + url + " HTTP/1.1\r\n";
 
     message += "Host: " + host + "\r\n";
     
@@ -35,7 +34,7 @@ string compute_get_request(string host, string url, string query_params, string 
     return message;
 }
 
-string compute_post_request(string host, string url, string content_type, string body_data, int body_size, string cookie) {
+string compute_post_request(string host, string url, string content_type, string body_data, int body_size, string jwt_token, string cookie) {
     string message = "";
 
     message += "POST " + url + " HTTP/1.1\r\n";
@@ -48,9 +47,35 @@ string compute_post_request(string host, string url, string content_type, string
         message += "Cookie: " + cookie + "\r\n";
     }
 
+    if (jwt_token.compare("") != 0) {
+        message += "Authorization: Bearer " + jwt_token + "\r\n";
+    }
+
     message += "\r\n";
     
     message += body_data;
 
     return message;
 }
+
+string compute_delete_request(string host, string url, string jwt_token, string cookie) {
+    string message = "";
+
+    message += "DELETE " + url + " HTTP/1.1\r\n";
+
+    message += "Host: " + host + "\r\n";
+    
+    if (jwt_token.compare("") != 0) {
+        message += "Authorization: Bearer " + jwt_token + "\r\n";
+    }
+
+    if (cookie.compare("") != 0) {
+        message += "Cookie: " + cookie + "\r\n";
+    }
+
+    message += "\r\n";
+    
+    return message;
+}
+
+#endif
