@@ -12,6 +12,8 @@
 #include <string>
 #include <iostream>
 #include "buffer.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
 
 #define BUFLEN 4096
 #define LINELEN 1000
@@ -21,7 +23,18 @@
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_LENGTH_SIZE (sizeof(CONTENT_LENGTH) - 1)
 
+#define REGISTER 1
+#define LOGIN 2
+#define ENTER_LIBRARY 3
+#define GET_BOOKS 4
+#define GET_BOOK 5
+#define ADD_BOOK 6
+#define DELETE_BOOK 7
+#define LOGOUT 8
+
 using namespace std;
+
+using json = nlohmann::json;
 
 void error(const char *msg)
 {
@@ -170,6 +183,72 @@ bool check_credential(string to_check_str, string descriptor) {
     }
 
     return true;
+}
+
+bool check_response(string response, int command) {
+    int first_line_size = response.find("\r\n");
+    string first_line = response.substr(0, first_line_size);
+    int http_size = first_line.find(" ");
+    first_line.erase(0, http_size + 1);
+    
+    if (command == REGISTER) {
+        if (!first_line.compare(0, 3, "201")) {
+            cout << first_line << " - User registered successfully!" << endl;
+            return true;
+        }
+    }
+
+    if (!first_line.compare(0, 3, "200")) {
+        switch (command) {
+            case LOGIN:
+                cout << first_line << " - Logged in successfully!" << endl;
+                break;
+            case ENTER_LIBRARY:
+                cout << first_line << " - Entered library successfully!" << endl;
+                break;
+            case GET_BOOKS:
+                cout << first_line << " - These are your books:" << endl;
+                break;
+            case GET_BOOK:
+                cout << first_line << " - This is the book you requested:" << endl;
+                break;
+            case ADD_BOOK:
+                cout << first_line << " - Book added successfully!" << endl;
+                break;
+            case DELETE_BOOK:
+                cout << first_line << " - Book deleted successfully!" << endl;
+                break;
+            case LOGOUT:
+                cout << first_line << " - Logged out successfully!" << endl;
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+
+    cout << first_line;
+
+    unsigned int body_position = response.find("\r\n\r\n");
+    
+    if (body_position == string::npos) {
+        cout << endl;
+        return false;
+    }
+    
+    string body = response.substr(body_position);
+
+    json body_json;
+    if (body_json.accept(body)) {
+        body_json = json::parse(body);
+        
+        if (body_json.contains("error"))
+            cout << " - " << body_json["error"];
+    }
+
+    cout << endl;
+
+    return false;
 }
 
 #endif

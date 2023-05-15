@@ -173,27 +173,7 @@ state_t do_register(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("201") == 0) {
-        cout << "201 - Created - User successfully registered!" << endl;
-    }
-
-    if (response_code.compare("400") == 0) {
-        cout << "400 -  Bad request";
-        if (response.find("is taken!") != string::npos)
-            cout << " - This username is taken!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
-    }
+    check_response(response, REGISTER);
 
     close_connection(data->server_sockfd);
 
@@ -237,46 +217,13 @@ state_t do_login(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - Successfully logged in as " << username << "!" << endl;
-
-        string word;
-
-        bool has_cookie = false;
-        while (response_stream >> word)
-            if (word.compare("Set-Cookie:") == 0) {
-                has_cookie = true;
-                break;
-            }
-        
-        if (has_cookie) {
-            response_stream >> data->cookie;
-            data->cookie.pop_back();
-        } else {
-            cout << "ERROR No cookie found in response." << endl;
-        }
+    if (check_response(response, LOGIN)) {
+        int cookie_position = response.find("Set-Cookie:");
+        string cookie = response.substr(cookie_position + 12);
+        int next_word_pos = cookie.find("; ");
+        data->cookie = cookie.erase(next_word_pos);
     }
-
-    if (response_code.compare("400") == 0) {
-        cout << "400 - Bad request";
-        if (response.find("No account with this username!") != string::npos)
-            cout << " - No account with this username!";
-        else if (response.find("Credentials are not good!") != string::npos)
-            cout << " - Credentials are not good!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
-    }
-
+    
     close_connection(data->server_sockfd);
 
     delete request_char_array;
@@ -297,16 +244,7 @@ state_t do_enter_library(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - Entered library successfully!" << endl;
-
+    if (check_response(response, ENTER_LIBRARY)) {
         int bodyIdx = response.find("\r\n\r\n");
         string body = response.substr(bodyIdx);
 
@@ -315,17 +253,6 @@ state_t do_enter_library(instance_data_t data) {
             body_json = json::parse(body);
             data->jwt_token = body_json["token"];
         }
-    }
-
-    if (response_code.compare("401") == 0) {
-        cout << "401 - Unauthorized";
-        if (response.find("You are not logged in!") != string::npos) 
-            cout << " - You are not logged in!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
     }
 
     close_connection(data->server_sockfd);
@@ -348,16 +275,7 @@ state_t do_get_books(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - These are your books:" << endl;
-
+    if (check_response(response, GET_BOOKS)) {
         int bodyIdx = response.find("\r\n\r\n");
         string body = response.substr(bodyIdx);
 
@@ -366,17 +284,6 @@ state_t do_get_books(instance_data_t data) {
             body_json = json::parse(body);
             cout << body_json.dump(4) << endl;
         }
-    }
-
-    if (response_code.compare("403") == 0) {
-        cout << "403 - Forbidden";
-        if (response.find("Authorization header is missing!") != string::npos) 
-            cout << " - Authorization header is missing!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
     }
 
     close_connection(data->server_sockfd);
@@ -407,16 +314,7 @@ state_t do_get_book(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - This the is book with id " << id_string << ":" << endl;
-
+    if (check_response(response, GET_BOOK)) {
         int bodyIdx = response.find("\r\n\r\n");
         string body = response.substr(bodyIdx);
 
@@ -425,24 +323,6 @@ state_t do_get_book(instance_data_t data) {
             body_json = json::parse(body);
             cout << body_json.dump(4) << endl;
         }
-    }
-
-    if (response_code.compare("403") == 0) {
-        cout << "403 - Forbidden";
-        if (response.find("Authorization header is missing!") != string::npos) 
-            cout << " - Authorization header is missing!";
-        cout << endl;
-    }
-
-    if (response_code.compare("404") == 0) {
-        cout << "404 - Not Found";
-        if (response.find("No book was found!") != string::npos) 
-            cout << " - No book was found!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
     }
 
     close_connection(data->server_sockfd);
@@ -500,7 +380,7 @@ state_t do_add_book(instance_data_t data) {
 
     string body = body_json.dump(4);
 
-    string request = compute_post_request(ip_server + to_string(port), "/api/v1/tema/library/books", "application/json", body, body.size(), data->jwt_token, data->cookie);
+    string request = compute_post_request(ip_server, "/api/v1/tema/library/books", "application/json", body, body.size(), data->jwt_token, data->cookie);
 
     int request_len = request.size();
 
@@ -510,8 +390,8 @@ state_t do_add_book(instance_data_t data) {
     send_to_server(data->server_sockfd, request_char_array);
 
     string response = receive_from_server(data->server_sockfd);
-
-    cout << response << endl;
+    
+    check_response(response, ADD_BOOK);
 
     close_connection(data->server_sockfd);
     delete request_char_array;
@@ -541,7 +421,7 @@ state_t do_delete_book(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    cout << response << endl;
+    check_response(response, DELETE_BOOK);
 
     close_connection(data->server_sockfd);
     delete request_char_array;
@@ -563,28 +443,9 @@ state_t do_logout(instance_data_t data) {
 
     string response = receive_from_server(data->server_sockfd);
 
-    stringstream response_stream(response);
-    string http;
-    string response_code;
-
-    response_stream >> http;
-    response_stream >> response_code;
-
-    if (response_code.compare("200") == 0) {
-        cout << "200 - OK - Logged out!" << endl;
+    if (check_response(response, LOGOUT)) {
         data->cookie = "";   
         data->jwt_token = "";
-    }
-
-    if (response_code.compare("400") == 0) {
-        cout << "400 - Bad request";
-        if (response.find("You are not logged in!") != string::npos)
-            cout << " - You are not logged in!";
-        cout << endl;
-    }
-
-    if (response_code[0] == '5') {
-        cout << response_code << " - Server error!" << endl;
     }
 
     delete request_char_array;
