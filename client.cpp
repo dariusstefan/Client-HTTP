@@ -222,6 +222,7 @@ state_t do_login(instance_data_t data) {
         string cookie = response.substr(cookie_position + 12);
         int next_word_pos = cookie.find("; ");
         data->cookie = cookie.erase(next_word_pos);
+        data->jwt_token = "";
     }
     
     close_connection(data->server_sockfd);
