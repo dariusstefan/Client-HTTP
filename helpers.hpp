@@ -156,7 +156,7 @@ bool check_number(string to_check_str, string descriptor) {
         return false;
     }
 
-    if (to_check_str[0] == '0') {
+    if (to_check_str.size() > 1 && to_check_str[0] == '0') {
         cout << descriptor << " must be a positive number!" << endl;
         return false;
     }
